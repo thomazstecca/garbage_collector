@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <assert.h>
 
-typedef struct header {
+typedef struct header { // linked list of memory 
   unsigned int   size;
   struct header *next;
 } header_t;
@@ -18,17 +18,17 @@ static void add_to_free_list(header_t *bp) // scan free list and look for a plac
 {
   header_t *p;
 
-  for (p = freep; !(bp > p && bp < p->next); p = p->next)
-    if (p >= p->next && (bp > p || bp < p->next))
+  for (p = freep; !(bp > p && bp < p->next); p = p->next) // transverse freep list and check if bp is outside the p --- p->next bound
+    if (p >= p->next && (bp > p || bp < p->next)) // reached end of freep list
       break;
 
-  if (bp + bp->size == p->next){
+  if (bp + bp->size == p->next){ // join bp and p->next if its size ends right where p->next starts
     bp->size += p->next->size;
     bp->next = p->next->next;
   } else
     bp->next = p->next;
 
-  if (p + p->size == bp){
+  if (p + p->size == bp){ // join p --- bp if its addres is right where p->next starts
     p->size += bp->size;
     p->next = bp->next;
   } else
@@ -47,12 +47,12 @@ static header_t* morecore(size_t num_units) // request more memory from kernel
   if (num_units > MIN_ALLOC_SIZE)
     num_units = MIN_ALLOC_SIZE / sizeof(header_t);
 
-  if ((vp = sbrk(num_units * sizeof(header_t))) == (void *) -1)
+  if ((vp = sbrk(num_units * sizeof(header_t))) == (void *) -1) // atributes new memory page to vp and if sbrk fails throw null
       return NULL;
 
   up = (header_t *) vp;
   up->size = num_units;
-  add_to_free_list (up);
+  add_to_free_list (up); 
   return freep;
 }
 
